@@ -36,11 +36,16 @@ def dns_search(dictionary, path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python3 sniffer.py [path-to-pcap-file]")
+        tw.write("Usage: python3 sniffer.py [path-to-pcap-file]\n", red=True)
         exit(2)
     path = sys.argv[1]
     if not (os.path.exists(path) and os.path.isfile(path)):
-        print("File not found")
+        tw.write("File not found\n", red=True)
+        exit(1)
+    parts = list(os.path.basename(path).split('.', 1))
+    if len(parts) != 2 or parts[1] != 'pcap':
+        tw.write(
+            "Mode not supported.\nCurrently supported mode is pcap.\n", yellow=True)
         exit(1)
 
     # HTTP sniffing
