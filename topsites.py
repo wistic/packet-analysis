@@ -2,6 +2,7 @@ import os
 import sys
 import py
 import re
+import csv
 import pyshark
 import itertools
 from tabulate import tabulate
@@ -12,27 +13,29 @@ tw = py.io.TerminalWriter()
 def pretty_print(dictionary, count):
     if len(dictionary) > 0:
         tw.write("Top "+str(count)+" websites\n\n", yellow=True, bold=True)
-    if len(dictionary) > count:
-        top_sites = [entry for entry in itertools.islice(
-            dictionary.values(), count)]
+        if len(dictionary) > count:
+            top_sites = [entry for entry in itertools.islice(
+                dictionary.values(), count)]
+        else:
+            top_sites = list(dictionary.values())
+        headings = ['server_ip', 'server_port', 'protocol',
+                    'server_packet_count', 'client_packet_count', 'total_packets', 'domain_name']
+        table = []
+        rank = 1
+        for site in top_sites:
+            if len(site) > 0:
+                row = [rank]
+                for heading in headings:
+                    if heading in site:
+                        row.append(site[heading])
+                    else:
+                        row.append('')
+                table.append(row)
+                rank += 1
+        headings.insert(0, 'rank')
+        print(tabulate(table, headings, tablefmt="pretty"))
     else:
-        top_sites = list(dictionary.values())
-    headings = ['server_ip', 'server_port', 'protocol',
-                'server_packet_count', 'client_packet_count', 'total_packets', 'domain_name']
-    table = []
-    rank = 1
-    for site in top_sites:
-        if len(site) > 0:
-            row = [rank]
-            for heading in headings:
-                if heading in site:
-                    row.append(site[heading])
-                else:
-                    row.append('')
-            table.append(row)
-            rank += 1
-    headings.insert(0, 'rank')
-    print(tabulate(table, headings, tablefmt="pretty"))
+        tw.write("No HTTP and HTTPS packets found.\n", yellow=True)
 
 
 def sort(dictionary):
@@ -46,6 +49,8 @@ def sort(dictionary):
 
 def process(path, mode):
     conversations = {}
+    headers = ['Source', 'Source port', 'Destination',
+               'Destination Port', 'Protocol', 'Info', 'Domain Name']
     if mode == 'pcap':
         display_filter = "tls or http"
         capture = pyshark.FileCapture(path, display_filter=display_filter)
@@ -101,7 +106,18 @@ def process(path, mode):
                             conversations[dst_key]['client_packet_count'] += 1
                         elif src_key in conversations:
                             conversations[src_key]['server_packet_count'] += 1
-    return conversations
+    else:
+        with open(path) as f:
+            csv_reader = csv.DictReader(f)
+
+            # Testing valid configuration
+            for row in csv_reader:
+                for name in headers:
+                    if name not in row:
+                        return False, conversations
+                break
+
+    return True, conversations
 
 
 if __name__ == '__main__':
@@ -118,6 +134,11 @@ if __name__ == '__main__':
             "Mode not supported.\nSupported modes are pcap and csv.\n", yellow=True)
         exit(1)
     mode = parts[1]
-    dictionary = process(path, mode)
-    dictionary = sort(dictionary)
-    pretty_print(dictionary, 3)
+    success, dictionary = process(path, mode)
+    if success:
+        dictionary = sort(dictionary)
+        pretty_print(dictionary, 3)
+    else:
+        tw.write(
+            "Invalid configuration. Refer https://github.com/wistic/packet-analysis/blob/main/README.md for more details.\n", red=True)
+        exit(1)
