@@ -117,6 +117,35 @@ def process(path, mode):
                         return False, conversations
                 break
 
+            for row in csv_reader:
+                if row['Protocol'] == 'HTTP' or row['Protocol'] == 'TLSv1.3' or row['Protocol'] == 'TLSv1.2':
+                    if row['Domain Name'] != '':
+                        server_ip = row['Destination']
+                        server_port = row['Destination Port']
+                        ip_port_key = server_ip+':'+server_port
+                        if ip_port_key not in conversations:
+                            entry = {
+                                'server_ip': server_ip,
+                                'server_port': server_port,
+                                'protocol': row['Protocol'],
+                                'server_packet_count': 0,
+                                'client_packet_count': 1,
+                                'domain_name': row['Domain Name']
+                            }
+                            conversations[ip_port_key] = entry
+                        else:
+                            conversations[ip_port_key]['client_packet_count'] += 1
+                    else:
+                        src_ip = row['Source']
+                        dst_ip = row['Destination']
+                        src_port = row['Source port']
+                        dst_port = row['Destination Port']
+                        src_key = src_ip+':'+src_port
+                        dst_key = dst_ip+':'+dst_port
+                        if dst_key in conversations:
+                            conversations[dst_key]['client_packet_count'] += 1
+                        elif src_key in conversations:
+                            conversations[src_key]['server_packet_count'] += 1
     return True, conversations
 
 
