@@ -55,57 +55,50 @@ def process(path, mode):
         display_filter = "tls or http"
         capture = pyshark.FileCapture(path, display_filter=display_filter)
         for packet in capture:
+            src_ip = str(packet.ip.src)
+            dst_ip = str(packet.ip.dst)
+            src_port = str(packet.tcp.srcport)
+            dst_port = str(packet.tcp.dstport)
+            src_key = src_ip+':'+src_port
+            dst_key = dst_ip+':'+dst_port
             if 'HTTP' in packet:
-                if 'request_version' in packet.http.field_names:
-                    server_ip = str(packet.ip.dst)
-                    server_port = str(packet.tcp.dstport)
-                    ip_port_key = server_ip+':'+server_port
-                    if ip_port_key not in conversations:
+                if 'host' in packet.http.field_names:
+                    if dst_key not in conversations:
                         entry = {
-                            'server_ip': server_ip,
-                            'server_port': server_port,
+                            'server_ip': dst_ip,
+                            'server_port': dst_port,
                             'protocol': 'http',
                             'server_packet_count': 0,
                             'client_packet_count': 1,
                             'domain_name': str(packet.http.host)
                         }
-                        conversations[ip_port_key] = entry
+                        conversations[dst_key] = entry
                     else:
-                        conversations[ip_port_key]['client_packet_count'] += 1
-                elif 'response_version' in packet.http.field_names:
-                    server_ip = str(packet.ip.src)
-                    server_port = str(packet.tcp.srcport)
-                    ip_port_key = server_ip+':'+server_port
-                    if ip_port_key in conversations:
-                        conversations[ip_port_key]['server_packet_count'] += 1
+                        conversations[dst_key]['client_packet_count'] += 1
+                else:
+                    if dst_key in conversations:
+                        conversations[dst_key]['client_packet_count'] += 1
+                    elif src_key in conversations:
+                        conversations[src_key]['server_packet_count'] += 1
             elif 'TLS' in packet:
-                src_ip = str(packet.ip.src)
-                dst_ip = str(packet.ip.dst)
-                src_port = str(packet.tcp.srcport)
-                dst_port = str(packet.tcp.dstport)
-                src_key = src_ip+':'+src_port
-                dst_key = dst_ip+':'+dst_port
-                if 'record' in packet.tls.field_names:
-                    expression = ".*Handshake Protocol: Client Hello.*"
-                    if re.search(expression, packet.tls.record):
-                        if dst_key not in conversations:
-                            entry = {
-                                'server_ip': dst_ip,
-                                'server_port': dst_port,
-                                'protocol': 'https',
-                                'server_packet_count': 0,
-                                'client_packet_count': 1
-                            }
-                            if 'handshake_extensions_server_name' in packet.tls.field_names:
-                                entry['domain_name'] = packet.tls.handshake_extensions_server_name
-                            conversations[dst_key] = entry
-                        else:
-                            conversations[dst_key]['client_packet_count'] += 1
+                if 'handshake_extensions_server_name' in packet.tls.field_names:
+                    if dst_key not in conversations:
+                        entry = {
+                            'server_ip': dst_ip,
+                            'server_port': dst_port,
+                            'protocol': 'https',
+                            'server_packet_count': 0,
+                            'client_packet_count': 1,
+                            'domain_name': str(packet.tls.handshake_extensions_server_name)
+                        }
+                        conversations[dst_key] = entry
                     else:
-                        if dst_key in conversations:
-                            conversations[dst_key]['client_packet_count'] += 1
-                        elif src_key in conversations:
-                            conversations[src_key]['server_packet_count'] += 1
+                        conversations[dst_key]['client_packet_count'] += 1
+                else:
+                    if dst_key in conversations:
+                        conversations[dst_key]['client_packet_count'] += 1
+                    elif src_key in conversations:
+                        conversations[src_key]['server_packet_count'] += 1
     else:
         with open(path) as f:
             csv_reader = csv.DictReader(f)
@@ -119,29 +112,26 @@ def process(path, mode):
 
             for row in csv_reader:
                 if row['Protocol'] == 'HTTP' or row['Protocol'] == 'TLSv1.3' or row['Protocol'] == 'TLSv1.2':
+                    src_ip = row['Source']
+                    dst_ip = row['Destination']
+                    src_port = row['Source port']
+                    dst_port = row['Destination Port']
+                    src_key = src_ip+':'+src_port
+                    dst_key = dst_ip+':'+dst_port
                     if row['Domain Name'] != '':
-                        server_ip = row['Destination']
-                        server_port = row['Destination Port']
-                        ip_port_key = server_ip+':'+server_port
-                        if ip_port_key not in conversations:
+                        if dst_key not in conversations:
                             entry = {
-                                'server_ip': server_ip,
-                                'server_port': server_port,
+                                'server_ip': dst_ip,
+                                'server_port': dst_port,
                                 'protocol': row['Protocol'],
                                 'server_packet_count': 0,
                                 'client_packet_count': 1,
                                 'domain_name': row['Domain Name']
                             }
-                            conversations[ip_port_key] = entry
+                            conversations[dst_key] = entry
                         else:
-                            conversations[ip_port_key]['client_packet_count'] += 1
+                            conversations[dst_key]['client_packet_count'] += 1
                     else:
-                        src_ip = row['Source']
-                        dst_ip = row['Destination']
-                        src_port = row['Source port']
-                        dst_port = row['Destination Port']
-                        src_key = src_ip+':'+src_port
-                        dst_key = dst_ip+':'+dst_port
                         if dst_key in conversations:
                             conversations[dst_key]['client_packet_count'] += 1
                         elif src_key in conversations:
