@@ -36,7 +36,7 @@ def dns_search(dictionary, path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        tw.write("Usage: python3 sniffer.py [path-to-pcap-file]\n", red=True)
+        tw.write("Usage: python sniffer.py [path-to-pcap-file]\n", red=True)
         exit(2)
     path = sys.argv[1]
     if not (os.path.exists(path) and os.path.isfile(path)):

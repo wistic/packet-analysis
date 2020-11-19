@@ -9,6 +9,7 @@ $ git clone https://github.com/wistic/packet-analysis.git
 ```
 2. Create a [virtualenv](https://pypi.org/project/virtualenv/).
 ```shell
+$ cd packet-analysis
 $ virtualenv venv
 $ source venv/bin/activate
 ```
@@ -21,11 +22,11 @@ $ pip install -r requirements.txt
 6. Run
     - To run __sniffer__:
     ```shell
-    $ python3 sniffer.py [path-to-pcap-file]
+    $ python sniffer.py [path-to-pcap-file]
     ```
     - To run __topsites__:
     ```shell
-    $ python3 topsites.py [path-to-file]
+    $ python topsites.py [path-to-file]
     ```
 ### Note
 - Make sure tshark is installed in one of the paths mentioned in this [config file](https://github.com/KimiNewt/pyshark/blob/master/src/pyshark/config.ini).
