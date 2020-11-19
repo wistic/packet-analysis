@@ -72,18 +72,14 @@ if __name__ == "__main__":
                 else:
                     conversation = http_conversations[url]
 
-                key = ""
-                value = ""
                 for field_line in form_layer._get_all_field_lines():
                     if ':' in field_line:
                         field_name, field_line = field_line.split(':', 1)
-                        if re.search('^Key', field_name.strip()):
-                            key = field_line.strip()
-                            if key != "":
-                                conversation[key] = value
-                        elif re.search('^Value', field_name.strip()):
-                            value = field_line.strip()
-                            if key != "":
+                        if re.search('^Form item', field_name.strip()):
+                            key, value = field_line.split('=', 1)
+                            key = key.strip().strip('\"')
+                            value = value.strip().strip('\"')
+                            if key != "" and value != "":
                                 conversation[key] = value
 
     capture.close()
@@ -103,17 +99,14 @@ if __name__ == "__main__":
                     "ip": str(ip_address),
                     "port": str(port)
                 }
-                if packet.ftp.request_command == "USER":
-                    conversation['user'] = str(packet.ftp.request_arg)
-                elif packet.ftp.request_command == "PASS":
-                    conversation['password'] = str(packet.ftp.request_arg)
                 ftp_conversations[ip_port_key] = conversation
             else:
                 conversation = ftp_conversations[ip_port_key]
-                if packet.ftp.request_command == "USER":
-                    conversation['user'] = str(packet.ftp.request_arg)
-                elif packet.ftp.request_command == "PASS":
-                    conversation['password'] = str(packet.ftp.request_arg)
+
+            if packet.ftp.request_command == "USER":
+                conversation['user'] = str(packet.ftp.request_arg)
+            elif packet.ftp.request_command == "PASS":
+                conversation['password'] = str(packet.ftp.request_arg)
     capture.close()
 
     dns_search(ftp_conversations, path)
@@ -143,12 +136,12 @@ if __name__ == "__main__":
                         "ip": str(server_ip),
                         "port": str(port)
                     }
-                    if key != "":
-                        conversation[key] = value
                     telnet_conversations[ip_port_key] = conversation
                 else:
-                    if key != "":
-                        telnet_conversations[ip_port_key][key] = value
+                    conversation = telnet_conversations[ip_port_key]
+
+                if key != "":
+                    conversation[key] = value
                 key = value = client_ip = server_ip = ""
         else:
             expression = ".*[lL]ogin:.*"
