@@ -18,8 +18,7 @@ def pretty_print(dictionary, count):
                 dictionary.values(), count)]
         else:
             top_sites = list(dictionary.values())
-        headings = ['server_ip', 'server_port', 'protocol',
-                    'server_packet_count', 'client_packet_count', 'total_packets', 'domain_name']
+        headings = ['server_ip', 'server_port', 'protocol', 'domain_name']
         table = []
         rank = 1
         for site in top_sites:
