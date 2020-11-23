@@ -51,7 +51,7 @@ def process(path, mode):
     headers = ['Source', 'Source port', 'Destination',
                'Destination Port', 'Protocol', 'Info', 'Domain Name']
     if mode == 'pcap':
-        display_filter = "tls or http"
+        display_filter = "ip and tcp and (tls or http)"
         capture = pyshark.FileCapture(path, display_filter=display_filter)
         for packet in capture:
             src_ip = str(packet.ip.src)

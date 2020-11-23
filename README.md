@@ -32,5 +32,6 @@ $ pip install -r requirements.txt
 - Make sure tshark is installed in one of the paths mentioned in this [config file](https://github.com/KimiNewt/pyshark/blob/master/src/pyshark/config.ini).
 - Download sample pcap and csv files from [here](https://drive.google.com/drive/folders/1TBTElE37t24a31X-ZC7bpok_izmpn_1i?usp=sharing).
 - Only use the [topsites](https://github.com/wistic/packet-analysis/tree/main/config/topsites) configuration profile to [export packet dissections](https://www.wireshark.org/docs/wsug_html_chunked/ChIOExportSection.html).
+- It is advised  to use the display filter `ip and tcp and (tls or http)` before exporting packet dissections to remove usless packets from the csv dump.
 - Supported file formats for topsites are `pcap` and `csv`.
 - Supported file format for sniffer is `pcap`.
